@@ -5,6 +5,7 @@ operator-facing instructions; entries marked EXAMPLE_UNREVIEWED have not been
 reviewed and must not be used with real callers.
 """
 
+import math
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import date
@@ -13,6 +14,14 @@ from enum import StrEnum
 from clinical_triage.conversation.config import ConversationConfig
 from clinical_triage.domain.facts import FactValue
 from clinical_triage.domain.voice import AgentSpec, FieldSpec, TransferTarget
+
+IDENTITY_TASK = "identity"
+OFFER_TASKS = ("offer", "offer_retry")
+IDENTITY_FIELD_KEYS = ("identity.given_name", "identity.family_name", "identity.birth_date")
+
+
+def offer_field_key(task_id: str) -> str:
+    return f"{task_id}.accept"
 
 
 class ParseKind(StrEnum):
@@ -23,27 +32,41 @@ class ParseKind(StrEnum):
 
 @dataclass(frozen=True)
 class VoiceQuestion:
+    """Voice wording and deterministic parsing for one conversation question.
+
+    `plausible_range` is a data-quality check, not a clinical threshold: a
+    number outside it is recorded unconfirmed so the reducer asks the
+    configured clarification instead of routing on a likely mishearing.
+    """
+
     question_id: str
     fact_id: str
     field: FieldSpec
     parse: ParseKind
     unit_code: str | None = None
+    plausible_range: tuple[float, float] | None = None
 
     def parse_value(self, raw: object) -> FactValue | None:
         """Deterministically parse a voice field; anything unparseable is None."""
 
-        if raw is None:
+        if raw is None or isinstance(raw, bool):
             return None
         text = str(raw).strip()
         if self.parse is ParseKind.YES_NO:
             return {"YES": True, "NO": False}.get(text.upper())
         if self.parse is ParseKind.CHOICE:
-            return text if text in self.field.choices else None
+            return next((c for c in self.field.choices if c.upper() == text.upper()), None)
         try:
             number = float(text)
         except ValueError:
             return None
-        return number if number == number and abs(number) != float("inf") else None
+        return number if math.isfinite(number) else None
+
+    def is_plausible(self, value: FactValue) -> bool:
+        if self.plausible_range is None or not isinstance(value, (int, float)):
+            return True
+        low, high = self.plausible_range
+        return low <= value <= high
 
 
 @dataclass(frozen=True)
@@ -70,6 +93,7 @@ class OrchestratorConfig:
     questions: tuple[VoiceQuestion, ...]
     consent_field: FieldSpec
     consent_boundary_script: str
+    identity_fields: tuple[FieldSpec, ...]
     windows: Mapping[str, SchedulingWindow]
     emergency_target: TransferTarget
     human_review_target: TransferTarget
@@ -87,17 +111,35 @@ class OrchestratorConfig:
         ids = [q.question_id for q in self.questions]
         if len(ids) != len(set(ids)):
             raise ValueError("voice question IDs must be unique")
-        reserved = {"identity", "offer", self.conversation.consent_question_id}
+        reserved = {IDENTITY_TASK, *OFFER_TASKS, self.conversation.consent_question_id}
         if reserved & set(ids):
             raise ValueError("voice question IDs collide with orchestrator task IDs")
+        specs = {q.question_id: q for q in self.conversation.questions}
+        if set(specs) != set(ids):
+            raise ValueError("voice questions must cover exactly the conversation questions")
         for question in self.questions:
-            if question.field.key != question.fact_id:
-                raise ValueError("voice field key must equal its fact ID")
+            if specs[question.question_id].fact_id != question.fact_id:
+                raise ValueError("voice question fact ID must match the conversation question")
+        if tuple(f.key for f in self.identity_fields) != IDENTITY_FIELD_KEYS:
+            raise ValueError(f"identity fields must be exactly {IDENTITY_FIELD_KEYS}")
+        keys = [
+            *(q.field.key for q in self.questions),
+            self.consent_field.key,
+            *IDENTITY_FIELD_KEYS,
+            *(offer_field_key(t) for t in OFFER_TASKS),
+        ]
+        # A reused key would let a stale answer satisfy a later task.
+        if len(keys) != len(set(keys)):
+            raise ValueError("voice field keys must be unique across all tasks")
         missing_windows = set(self.conversation.scheduling_windows.values()) - set(self.windows)
         if missing_windows:
             raise ValueError(f"no time range for scheduling windows: {sorted(missing_windows)}")
-        if self.conversation.fallback_emergency_script_id not in self.scripts:
-            raise ValueError("the fallback emergency script must have text")
+        for script_id in (
+            self.conversation.fallback_emergency_script_id,
+            self.conversation.close_script_id,
+        ):
+            if script_id not in self.scripts:
+                raise ValueError(f"script {script_id!r} must have text")
 
     def question(self, question_id: str) -> VoiceQuestion | None:
         return next((q for q in self.questions if q.question_id == question_id), None)
