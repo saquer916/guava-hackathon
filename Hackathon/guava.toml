@@ -1,0 +1,9 @@
+project_id = "gp-8053f727-05c4-4f7b-b404-6c569e4b0c88"
+org_id = "6ab7e0dc1c28d96355779891"
+name = "hackathon"
+call_direction = "inbound"
+base_image = "python-sandbox:3.14"
+phone_number = "+12402126155"
+tier = "guava-seed"
+replicas = 1
+enable_healthcheck = true
