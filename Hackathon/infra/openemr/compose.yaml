@@ -1,0 +1,63 @@
+# Local-only, synthetic-only OpenEMR for the triage prototype.
+#
+# - Every published port binds to 127.0.0.1; nothing listens on other interfaces.
+# - Images are pinned by immutable dated tag and content digest.
+# - No credential has a default: `docker compose` refuses to start until the
+#   ignored `.env` file (copied from `.env.example`) supplies every value.
+# - Only synthetic fixtures may be loaded. Never import real patient data.
+#
+# Runbook: docs/openemr-local.md
+
+name: guava-openemr-local
+
+services:
+  mariadb:
+    image: mariadb:11.8.9@sha256:79d59758afc91b89b120b0a8904d637f5a3b3e1c4900f29b740d6d46c72fef68
+    restart: "no"
+    command:
+      - --character-set-server=utf8mb4
+    environment:
+      MARIADB_ROOT_PASSWORD: ${OPENEMR_DB_ROOT_PASSWORD:?set OPENEMR_DB_ROOT_PASSWORD in infra/openemr/.env}
+    volumes:
+      - openemr-db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    networks:
+      - openemr-internal
+
+  openemr:
+    image: openemr/openemr:8.4.1-2026-09-26@sha256:1ebfa4aba79f255f9dfee7ea59df9203d0991018056adef3415f9e1c93ce9bd0
+    restart: "no"
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${OPENEMR_HTTPS_PORT:-9300}:443"
+    environment:
+      MYSQL_HOST: mariadb
+      MYSQL_ROOT_PASS: ${OPENEMR_DB_ROOT_PASSWORD:?set OPENEMR_DB_ROOT_PASSWORD in infra/openemr/.env}
+      MYSQL_USER: ${OPENEMR_DB_USER:?set OPENEMR_DB_USER in infra/openemr/.env}
+      MYSQL_PASS: ${OPENEMR_DB_PASSWORD:?set OPENEMR_DB_PASSWORD in infra/openemr/.env}
+      OE_USER: ${OPENEMR_ADMIN_USER:?set OPENEMR_ADMIN_USER in infra/openemr/.env}
+      OE_PASS: ${OPENEMR_ADMIN_PASSWORD:?set OPENEMR_ADMIN_PASSWORD in infra/openemr/.env}
+      OPENEMR_SETTING_site_addr_oath: "https://localhost:${OPENEMR_HTTPS_PORT:-9300}"
+      OPENEMR_SETTING_rest_fhir_api: "1"
+      OPENEMR_SETTING_rest_api: "0"
+      OPENEMR_SETTING_rest_portal_api: "0"
+      OPENEMR_SETTING_rest_system_scopes_api: "0"
+      OPENEMR_SETTING_oauth_password_grant: "0"
+    volumes:
+      - openemr-sites:/var/www/localhost/htdocs/openemr/sites
+    networks:
+      - openemr-internal
+
+volumes:
+  openemr-db:
+  openemr-sites:
+
+networks:
+  openemr-internal:
+    driver: bridge
