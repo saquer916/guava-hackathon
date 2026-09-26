@@ -547,6 +547,8 @@ class CallOrchestrator:
         )
 
     def _booking_failed(self, ctx: CallContext, reason: str) -> None:
+        # Some failures (an expired offer) never reach the EHR; keep every attempt auditable.
+        ctx.error_codes.append(f"BOOKING_ATTEMPT_FAILED:{reason}")
         ctx.booking_failures += 1
         retry = ctx.booking_failures == 1 and reason in self._config.retryable_booking_failures
         self._scheduling_failed(ctx, reason, retry=retry)

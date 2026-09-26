@@ -298,6 +298,7 @@ def test_retry_offer_needs_a_fresh_yes_then_second_failure_goes_to_human_review(
     assert result.task_ids()[-2:] == ["offer", "offer_retry"]
     assert result.operations("EHR.CREATE_APPOINTMENT") == [OperationOutcome.FAILED] * 2
     assert "HUMAN_REVIEW:SLOT_NO_LONGER_AVAILABLE" in human_decisions(result)
+    assert result.audit.error_codes.count("BOOKING_ATTEMPT_FAILED:SLOT_NO_LONGER_AVAILABLE") == 2
     assert harness.ehr.booked_slot_ids == {}
 
 
@@ -533,3 +534,15 @@ def test_scheduling_failure_scenario_patient_f() -> None:
     assert result.operations("EHR.CREATE_APPOINTMENT") == [OperationOutcome.FAILED] * 2
     assert "HUMAN_REVIEW:SLOT_NO_LONGER_AVAILABLE" in human_decisions(result)
     assert disposition(result) is Disposition.URGENT_SAME_DAY
+
+
+def test_expired_offer_is_audited_even_though_it_never_reaches_the_ehr() -> None:
+    harness = build(allow_booking_writes=True)
+    step = at_offer(harness)
+    harness.clock.advance(seconds=301)
+    step.answer("offer", {"offer.accept": "YES"})
+    step.answer("offer_retry", {"offer_retry.accept": "YES"})
+    result = step.end()
+    assert "BOOKING_ATTEMPT_FAILED:OFFER_EXPIRED" in result.audit.error_codes
+    assert result.operations("EHR.CREATE_APPOINTMENT") == [OperationOutcome.COMPLETED]
+    assert result.ctx.appointment_id is not None
