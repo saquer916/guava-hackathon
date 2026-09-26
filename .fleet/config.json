@@ -1,0 +1,193 @@
+{
+  "schemaVersion": 1,
+  "project": {
+    "name": "guava-hackathon",
+    "description": "Synthetic-only family-medicine inbound call triage prototype",
+    "languages": [
+      "Python"
+    ],
+    "metadata": {
+      "runtime": "Python 3.12 via uv",
+      "clinicalBoundary": "triage-and-routing-not-diagnosis",
+      "dataPolicy": "synthetic-only"
+    }
+  },
+  "repository": {
+    "provider": "github",
+    "remote": "saquer916/guava-hackathon"
+  },
+  "instructions": {
+    "repository": "AGENTS.md"
+  },
+  "verification": {
+    "stopOnFailure": true,
+    "timeoutMs": 120000,
+    "maxOutputBytes": 100000,
+    "checks": [
+      {
+        "id": "lint",
+        "label": "Python lint",
+        "command": "uv",
+        "args": ["run", "--frozen", "ruff", "check", "."],
+        "cwd": "Hackathon",
+        "required": true
+      },
+      {
+        "id": "typecheck",
+        "label": "Python typecheck",
+        "command": "uv",
+        "args": ["run", "--frozen", "mypy", "src", "tests"],
+        "cwd": "Hackathon",
+        "required": true
+      },
+      {
+        "id": "test",
+        "label": "Deterministic tests",
+        "command": "uv",
+        "args": ["run", "--frozen", "pytest", "-q"],
+        "cwd": "Hackathon",
+        "required": true
+      },
+      {
+        "id": "build",
+        "label": "Python package build",
+        "command": "uv",
+        "args": ["run", "--frozen", "hatchling", "build"],
+        "cwd": "Hackathon",
+        "required": true
+      }
+    ]
+  },
+  "tools": [
+    {
+      "id": "github",
+      "adapter": "github-cli",
+      "enabled": true,
+      "mode": "read-write",
+      "capabilities": [
+        "repository-discovery",
+        "issue-task-persistence",
+        "branch-create",
+        "pr-create",
+        "pr-inspect",
+        "ci-inspect",
+        "diff-retrieval"
+      ]
+    }
+  ],
+  "capabilities": {
+    "codex": [
+      "architecture",
+      "implementation",
+      "final-review",
+      "branch-create",
+      "commit",
+      "pr-create",
+      "pr-inspect",
+      "ci-inspect"
+    ],
+    "copilot": [
+      "trace",
+      "test",
+      "audit",
+      "bounded-implementation"
+    ],
+    "gemini": [
+      "independent-review",
+      "large-context-investigation"
+    ],
+    "sentry": [
+      "runtime-error-evidence"
+    ],
+    "datadog": [
+      "telemetry-evidence"
+    ],
+    "blackfire": [
+      "performance-evidence"
+    ],
+    "camber": [
+      "compute-job"
+    ]
+  },
+  "deployment": {
+    "environments": [],
+    "productionPolicy": "prohibited",
+    "metadata": {
+      "prototypeEnvironment": "local-synthetic-only"
+    }
+  },
+  "risk": {
+    "paths": [
+      {
+        "pattern": ".github/workflows/**",
+        "level": "high",
+        "reason": "CI and release control plane"
+      },
+      {
+        "pattern": "Hackathon/main.py",
+        "level": "high",
+        "reason": "Live Guava voice entry point"
+      },
+      {
+        "pattern": "Hackathon/guava.toml",
+        "level": "high",
+        "reason": "Guava project and phone binding metadata"
+      },
+      {
+        "pattern": "Hackathon/src/clinical_triage/safety/**",
+        "level": "high",
+        "reason": "Clinical red-flag and escalation policy"
+      },
+      {
+        "pattern": "Hackathon/src/clinical_triage/adapters/openemr/**",
+        "level": "high",
+        "reason": "EHR data and authentication boundary"
+      },
+      {
+        "pattern": "Hackathon/src/clinical_triage/adapters/guava/**",
+        "level": "high",
+        "reason": "External voice and call-transfer boundary"
+      },
+      {
+        "pattern": "Hackathon/infra/openemr/**",
+        "level": "high",
+        "reason": "Local EHR, credentials, ports, and synthetic data lifecycle"
+      }
+    ],
+    "operations": {
+      "production-deploy": "prohibited",
+      "destructive-migration": "approval-required",
+      "secret-mutation": "approval-required",
+      "branch-delete": "approval-required",
+      "force-push": "approval-required",
+      "production-data-mutation": "approval-required",
+      "credential-change": "approval-required",
+      "phi-ingestion": "prohibited",
+      "live-guava-call": "approval-required",
+      "live-ehr-write": "approval-required",
+      "external-call-transfer": "approval-required",
+      "openemr-public-exposure": "prohibited"
+    }
+  },
+  "context": {
+    "include": [
+      "README.md",
+      "AGENTS.md",
+      "Hackathon/README.md",
+      "Hackathon/pyproject.toml",
+      "docs/architecture.md",
+      "docs/task-graph.md",
+      "docs/fleet-field-test-guava.md"
+    ],
+    "exclude": [
+      "node_modules/**",
+      "dist/**",
+      "coverage/**",
+      "Hackathon/guava-docs.md",
+      "Hackathon/.venv/**",
+      ".git/**",
+      ".fleet/state/**"
+    ],
+    "maxBytes": 100000
+  }
+}

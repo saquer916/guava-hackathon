@@ -17,7 +17,7 @@ logger = logging.getLogger("guava.intro_agent")
 CURRENT_DIR = Path(__file__).resolve().parent
 
 try:
-    with open(CURRENT_DIR / "guava-docs.md", "r") as f:
+    with open(CURRENT_DIR / "guava-docs.md") as f:
         document_qa = DocumentQA(documents=f.read(), namespace="guava-cli-intro")
 
 except Exception as exc:
@@ -53,7 +53,10 @@ def on_call_start(call: guava.Call):
             guava.Field(
                 key="user_name",
                 field_type="text",
-                description="Transition with 'But first,' then ask the caller for their name so you can address them personally.",
+                description=(
+                    "Transition with 'But first,' then ask the caller for their name "
+                    "so you can address them personally."
+                ),
                 required=False,
             ),
             "Answer any questions the caller has about Guava.",

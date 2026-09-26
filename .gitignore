@@ -1,0 +1,17 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+.venv/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+Hackathon/dist/
+Hackathon/.fleet-artifacts/
+Hackathon/audit/*.jsonl
+Hackathon/infra/openemr/data/
