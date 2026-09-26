@@ -3,8 +3,9 @@
 from datetime import datetime
 from typing import Protocol
 
-from clinical_triage.domain.audit import AuditRecord, OperationalEvent
+from clinical_triage.domain.audit import AuditRecord, DecisionRecord, OperationalEvent
 from clinical_triage.domain.ehr import (
+    CallSummary,
     ClinicalContext,
     EHRCapabilityReport,
     ExistingAppointment,
@@ -14,9 +15,9 @@ from clinical_triage.domain.ehr import (
     RecordResult,
 )
 from clinical_triage.domain.scheduling import (
+    AppointmentConfirmation,
     AppointmentMutationResult,
-    AppointmentOptions,
-    AppointmentSlot,
+    AvailabilitySnapshot,
 )
 from clinical_triage.domain.triage import TriageResult
 
@@ -36,19 +37,27 @@ class EHRAdapter(Protocol):
 
     def get_available_appointments(
         self, *, earliest: datetime, latest: datetime, constraint_codes: tuple[str, ...]
-    ) -> AppointmentOptions: ...
+    ) -> AvailabilitySnapshot: ...
 
     def get_clinical_context(self, patient_id: str) -> ClinicalContext: ...
 
     def create_appointment(
-        self, *, patient_id: str, slot: AppointmentSlot, idempotency_key: str
+        self,
+        *,
+        patient_id: str,
+        confirmation: AppointmentConfirmation,
+        idempotency_key: str,
     ) -> AppointmentMutationResult: ...
 
     def update_appointment(
-        self, *, appointment_id: str, slot: AppointmentSlot, idempotency_key: str
+        self,
+        *,
+        appointment_id: str,
+        confirmation: AppointmentConfirmation,
+        idempotency_key: str,
     ) -> AppointmentMutationResult: ...
 
-    def record_call_summary(self, record: AuditRecord) -> RecordResult: ...
+    def record_call_summary(self, record: CallSummary) -> RecordResult: ...
 
     def record_triage_result(
         self, *, patient_id: str, result: TriageResult, idempotency_key: str
@@ -56,6 +65,8 @@ class EHRAdapter(Protocol):
 
 
 class AuditSink(Protocol):
-    def append_record(self, record: AuditRecord) -> None: ...
+    def append_audit_record(self, record: AuditRecord) -> None: ...
+
+    def append_decision_record(self, record: DecisionRecord) -> None: ...
 
     def emit_operational_event(self, event: OperationalEvent) -> None: ...

@@ -1,7 +1,7 @@
 """Conversation state and provider-neutral call lifecycle values."""
 
 from enum import StrEnum
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import Field, model_validator
 
@@ -57,6 +57,29 @@ class SessionState(DomainModel):
             raise ValueError("terminal must match ESCALATE or CLOSE phase")
         if self.disposition is Disposition.EMERGENCY and self.phase is not SessionPhase.ESCALATE:
             raise ValueError("EMERGENCY disposition requires ESCALATE phase")
+        if self.phase is SessionPhase.ESCALATE and self.disposition is not Disposition.EMERGENCY:
+            raise ValueError("ESCALATE phase requires EMERGENCY disposition")
+        scheduling_phases = {
+            SessionPhase.SLOT_SEARCH,
+            SessionPhase.SLOT_OFFERED,
+            SessionPhase.EXPLICIT_CONFIRMATION,
+            SessionPhase.BOOKING_COMMIT,
+        }
+        schedulable_dispositions = {
+            Disposition.URGENT_SAME_DAY,
+            Disposition.SOON,
+            Disposition.ROUTINE,
+            Disposition.ADMINISTRATIVE,
+        }
+        if self.phase in scheduling_phases and self.disposition not in schedulable_dispositions:
+            raise ValueError("scheduling requires an eligible non-emergency disposition")
+        offer_phases = {
+            SessionPhase.SLOT_OFFERED,
+            SessionPhase.EXPLICIT_CONFIRMATION,
+            SessionPhase.BOOKING_COMMIT,
+        }
+        if (self.phase in offer_phases) != (self.offered_slot_id is not None):
+            raise ValueError("offered_slot_id must exist exactly during offer and booking phases")
         return self
 
 
@@ -71,13 +94,63 @@ class DomainEventKind(StrEnum):
     SESSION_ENDED = "SESSION_ENDED"
 
 
-class DomainEvent(DomainModel):
+class EventBase(DomainModel):
     event_id: str = Field(min_length=1)
     call_id: str = Field(min_length=1)
     expected_state_version: int = Field(ge=0)
-    kind: DomainEventKind
-    fact: ClinicalFact | None = None
-    reference_id: str | None = None
+
+
+class CallStarted(EventBase):
+    kind: Literal[DomainEventKind.CALL_STARTED] = DomainEventKind.CALL_STARTED
+
+
+class ConsentRecorded(EventBase):
+    kind: Literal[DomainEventKind.CONSENT_RECORDED] = DomainEventKind.CONSENT_RECORDED
+    consent_code: str = Field(min_length=1)
+
+
+class AnswerRecorded(EventBase):
+    kind: Literal[DomainEventKind.ANSWER_RECORDED] = DomainEventKind.ANSWER_RECORDED
+    fact: ClinicalFact
+
+
+class AnswerCorrected(EventBase):
+    kind: Literal[DomainEventKind.ANSWER_CORRECTED] = DomainEventKind.ANSWER_CORRECTED
+    fact: ClinicalFact
+    replaces_event_id: str = Field(min_length=1)
+
+
+class TaskCompleted(EventBase):
+    kind: Literal[DomainEventKind.TASK_COMPLETED] = DomainEventKind.TASK_COMPLETED
+    task_id: str = Field(min_length=1)
+
+
+class AppointmentConfirmed(EventBase):
+    kind: Literal[DomainEventKind.APPOINTMENT_CONFIRMED] = DomainEventKind.APPOINTMENT_CONFIRMED
+    confirmation_id: str = Field(min_length=1)
+
+
+class HumanReviewRequested(EventBase):
+    kind: Literal[DomainEventKind.HUMAN_REVIEW_REQUESTED] = DomainEventKind.HUMAN_REVIEW_REQUESTED
+    reason_code: str = Field(min_length=1)
+
+
+class SessionEndedEvent(EventBase):
+    kind: Literal[DomainEventKind.SESSION_ENDED] = DomainEventKind.SESSION_ENDED
+    reason_code: str = Field(min_length=1)
+
+
+DomainEvent = Annotated[
+    CallStarted
+    | ConsentRecorded
+    | AnswerRecorded
+    | AnswerCorrected
+    | TaskCompleted
+    | AppointmentConfirmed
+    | HumanReviewRequested
+    | SessionEndedEvent,
+    Field(discriminator="kind"),
+]
 
 
 class AskQuestion(DomainModel):

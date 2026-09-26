@@ -1,12 +1,13 @@
 """Structured facts kept separate from conversational phrasing."""
 
+from datetime import date, datetime
 from enum import StrEnum
 
 from pydantic import Field, model_validator
 
 from clinical_triage.domain._model import DomainModel
 
-FactValue = str | int | float | bool
+FactValue = str | int | float | bool | date | datetime
 
 
 class FactSource(StrEnum):
@@ -21,6 +22,7 @@ class ClinicalFact(DomainModel):
     value: FactValue
     source: FactSource
     confirmed: bool = False
+    unit_code: str | None = None
 
 
 class ClinicalState(DomainModel):

@@ -33,6 +33,8 @@ class RuleEvaluationTrace(DomainModel):
 
 
 class AuditRecord(DomainModel):
+    """Sanitized decision telemetry safe for the fleet operational log."""
+
     call_id: str = Field(min_length=1)
     synthetic_patient_id: str | None = None
     started_at: datetime
@@ -41,7 +43,7 @@ class AuditRecord(DomainModel):
     policy_version: str = Field(min_length=1)
     policy_checksum_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     question_ids_asked: tuple[str, ...] = ()
-    facts_recorded: tuple[ClinicalFact, ...] = ()
+    fact_ids_recorded: tuple[str, ...] = ()
     rule_evaluations: tuple[RuleEvaluationTrace, ...] = ()
     disposition: Disposition | None = None
     appointment_option_ids_considered: tuple[str, ...] = ()
@@ -58,6 +60,26 @@ class AuditRecord(DomainModel):
                 raise ValueError("audit timestamps must be timezone-aware")
             if self.ended_at < self.started_at:
                 raise ValueError("audit end must not precede start")
+        return self
+
+
+class DecisionRecord(DomainModel):
+    """Protected clinical decision evidence; never emitted as operational telemetry."""
+
+    call_id: str = Field(min_length=1)
+    synthetic_patient_id: str | None = None
+    recorded_at: datetime
+    policy_id: str = Field(min_length=1)
+    policy_version: str = Field(min_length=1)
+    policy_checksum_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    facts_recorded: tuple[ClinicalFact, ...] = ()
+    rule_evaluations: tuple[RuleEvaluationTrace, ...] = ()
+    disposition: Disposition | None = None
+
+    @model_validator(mode="after")
+    def timestamp_is_aware(self) -> "DecisionRecord":
+        if self.recorded_at.tzinfo is None:
+            raise ValueError("decision timestamp must be timezone-aware")
         return self
 
 

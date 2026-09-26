@@ -82,18 +82,25 @@ class RecordResult(DomainModel):
         return self
 
 
-class CapabilityOperation(DomainModel):
-    resource_type: str = Field(min_length=1)
-    interaction: str = Field(min_length=1)
-    search_parameters: tuple[str, ...] = ()
-    required_scope: str = Field(min_length=1)
+class AdapterOperationCapability(DomainModel):
+    operation_code: str = Field(min_length=1)
     supported: bool
-    reason: str = Field(min_length=1)
+    reason_code: str = Field(min_length=1)
 
 
 class EHRCapabilityReport(DomainModel):
-    fhir_version: str = Field(min_length=1)
-    software_name: str = Field(min_length=1)
-    software_version: str = Field(min_length=1)
+    adapter_name: str = Field(min_length=1)
+    adapter_version: str = Field(min_length=1)
     active: bool
-    operations: tuple[CapabilityOperation, ...]
+    operations: tuple[AdapterOperationCapability, ...]
+
+
+class CallSummary(DomainModel):
+    call_id: str = Field(min_length=1)
+    synthetic_patient_id: str = Field(min_length=1)
+    disposition_code: str = Field(min_length=1)
+    rationale_code: str = Field(min_length=1)
+    policy_id: str = Field(min_length=1)
+    policy_version: str = Field(min_length=1)
+    trigger_rule_ids: tuple[str, ...] = ()
+    symptom_fact_ids: tuple[str, ...] = ()

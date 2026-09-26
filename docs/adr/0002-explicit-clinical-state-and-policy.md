@@ -24,8 +24,16 @@ without an identified clinical reviewer. Generated model confidence is not a
 policy input and is never clinical validation.
 
 Appointment commands require explicit confirmation and idempotency. A success
-message requires a provider receipt/appointment ID. Scheduling availability
+message requires a provider receipt/appointment ID. Availability is a raw,
+timestamped snapshot. Scheduling policy turns it into expiring offers, and a
+mutation requires an explicit confirmation tied to the offer, snapshot, slot,
+and confirmation event. Stale offers fail closed. Scheduling availability
 cannot downgrade a safety disposition.
+
+Protected decision records may contain structured clinical facts and rule
+evidence. Sanitized Fleet telemetry contains stable identifiers, outcomes, and
+error codes only. The EHR boundary receives a minimal coded call summary rather
+than the protected decision record or an operational log record.
 
 ## Consequences
 
