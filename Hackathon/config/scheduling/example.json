@@ -1,0 +1,21 @@
+{
+  "policy_id": "synthetic-family-medicine-scheduling",
+  "version": "0.1.0-example",
+  "normal_kind_order": [
+    "OPEN",
+    "SAME_DAY",
+    "CANCELLATION",
+    "SHORT_VISIT"
+  ],
+  "alternative_kind_order": [
+    "ALTERNATIVE_PROVIDER",
+    "TELEHEALTH",
+    "NEXT_AVAILABLE"
+  ],
+  "maximum_offers": 3,
+  "offer_ttl_seconds": 300,
+  "overbook_review_dispositions": [
+    "URGENT_SAME_DAY",
+    "SOON"
+  ]
+}
