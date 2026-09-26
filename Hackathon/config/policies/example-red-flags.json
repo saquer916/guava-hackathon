@@ -1,0 +1,104 @@
+{
+  "policy_id": "EXAMPLE_UNREVIEWED-family-medicine-routing",
+  "version": "0.1.0-example",
+  "checksum_sha256": "3ca5b730e45595b6f75a7c5749862cfec3c232fdabe7da9da2bb111c23c2760a",
+  "effective_date": "2026-09-26",
+  "review_status": "EXAMPLE_UNREVIEWED",
+  "approved_by": null,
+  "fact_definitions": [
+    {"fact_id": "red_flag.chest_pain_now", "data_type": "BOOLEAN"},
+    {"fact_id": "red_flag.trouble_breathing_now", "data_type": "BOOLEAN"},
+    {"fact_id": "red_flag.new_confusion_or_one_sided_weakness", "data_type": "BOOLEAN"},
+    {"fact_id": "red_flag.heavy_bleeding_now", "data_type": "BOOLEAN"},
+    {"fact_id": "call.reason", "data_type": "CODE"},
+    {"fact_id": "symptom.caller_rated_severity", "data_type": "CODE"},
+    {"fact_id": "symptom.measured_temperature", "data_type": "NUMBER", "allowed_unit_codes": ["Cel"]}
+  ],
+  "rules": [
+    {
+      "rule_id": "EX-EMERG-001",
+      "priority": 0,
+      "disposition": "EMERGENCY",
+      "all_of": [{"fact_id": "red_flag.chest_pain_now", "operator": "EQUALS", "value": true}],
+      "approved_script_id": "EXAMPLE_UNREVIEWED_SCRIPT_EMERGENCY_SERVICES"
+    },
+    {
+      "rule_id": "EX-EMERG-002",
+      "priority": 0,
+      "disposition": "EMERGENCY",
+      "all_of": [{"fact_id": "red_flag.trouble_breathing_now", "operator": "EQUALS", "value": true}],
+      "approved_script_id": "EXAMPLE_UNREVIEWED_SCRIPT_EMERGENCY_SERVICES"
+    },
+    {
+      "rule_id": "EX-EMERG-003",
+      "priority": 0,
+      "disposition": "EMERGENCY",
+      "all_of": [
+        {"fact_id": "red_flag.new_confusion_or_one_sided_weakness", "operator": "EQUALS", "value": true}
+      ],
+      "approved_script_id": "EXAMPLE_UNREVIEWED_SCRIPT_EMERGENCY_SERVICES"
+    },
+    {
+      "rule_id": "EX-EMERG-004",
+      "priority": 0,
+      "disposition": "EMERGENCY",
+      "all_of": [{"fact_id": "red_flag.heavy_bleeding_now", "operator": "EQUALS", "value": true}],
+      "approved_script_id": "EXAMPLE_UNREVIEWED_SCRIPT_EMERGENCY_SERVICES"
+    },
+    {
+      "rule_id": "EX-URGENT-001",
+      "priority": 10,
+      "disposition": "URGENT_SAME_DAY",
+      "all_of": [
+        {"fact_id": "call.reason", "operator": "EQUALS", "value": "SYMPTOM"},
+        {"fact_id": "symptom.caller_rated_severity", "operator": "EQUALS", "value": "SEVERE"}
+      ]
+    },
+    {
+      "rule_id": "EX-URGENT-002",
+      "priority": 11,
+      "disposition": "URGENT_SAME_DAY",
+      "all_of": [
+        {"fact_id": "call.reason", "operator": "EQUALS", "value": "SYMPTOM"},
+        {
+          "fact_id": "symptom.measured_temperature",
+          "operator": "GREATER_THAN_OR_EQUAL",
+          "value": 39.5,
+          "unit_code": "Cel"
+        }
+      ]
+    },
+    {
+      "rule_id": "EX-SOON-001",
+      "priority": 20,
+      "disposition": "SOON",
+      "all_of": [
+        {"fact_id": "call.reason", "operator": "EQUALS", "value": "SYMPTOM"},
+        {"fact_id": "symptom.caller_rated_severity", "operator": "EQUALS", "value": "MODERATE"}
+      ]
+    },
+    {
+      "rule_id": "EX-ROUTINE-001",
+      "priority": 30,
+      "disposition": "ROUTINE",
+      "all_of": [
+        {"fact_id": "call.reason", "operator": "EQUALS", "value": "SYMPTOM"},
+        {"fact_id": "symptom.caller_rated_severity", "operator": "EQUALS", "value": "MILD"}
+      ]
+    },
+    {
+      "rule_id": "EX-ROUTINE-002",
+      "priority": 30,
+      "disposition": "ROUTINE",
+      "all_of": [{"fact_id": "call.reason", "operator": "EQUALS", "value": "FOLLOW_UP"}]
+    },
+    {
+      "rule_id": "EX-ADMIN-001",
+      "priority": 40,
+      "disposition": "ADMINISTRATIVE",
+      "all_of": [
+        {"fact_id": "call.reason", "operator": "IN", "value": ["ADMINISTRATIVE", "MEDICATION_REFILL"]}
+      ]
+    }
+  ]
+}
