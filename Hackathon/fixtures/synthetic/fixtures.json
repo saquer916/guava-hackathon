@@ -1,0 +1,158 @@
+{
+  "clock": "2026-10-05T12:00:00Z",
+  "fixture_version": "1",
+  "patients": [
+    {
+      "allergy_codes": [],
+      "birth_date": "1980-01-02",
+      "condition_codes": [
+        "urn:synthetic:condition|SYN-COND-001"
+      ],
+      "family_name": "Synthetic",
+      "given_name": "Avery",
+      "medication_codes": [
+        "urn:synthetic:medication|SYN-MED-001"
+      ],
+      "observation_codes": [],
+      "phone": "555-0101",
+      "scenario_code": "ROUTINE_REQUEST",
+      "synthetic_id": "SYN-PAT-A"
+    },
+    {
+      "allergy_codes": [
+        "urn:synthetic:allergy|SYN-ALG-001"
+      ],
+      "birth_date": "1975-03-04",
+      "condition_codes": [],
+      "family_name": "Synthetic",
+      "given_name": "Blake",
+      "medication_codes": [],
+      "observation_codes": [],
+      "phone": "555-0102",
+      "scenario_code": "ADAPTIVE_CLARIFICATION",
+      "synthetic_id": "SYN-PAT-B"
+    },
+    {
+      "allergy_codes": [],
+      "birth_date": "1990-05-06",
+      "condition_codes": [],
+      "family_name": "Synthetic",
+      "given_name": "Casey",
+      "medication_codes": [],
+      "observation_codes": [],
+      "phone": "555-0103",
+      "scenario_code": "URGENT_SAME_DAY",
+      "synthetic_id": "SYN-PAT-C"
+    },
+    {
+      "allergy_codes": [],
+      "birth_date": "1968-07-08",
+      "condition_codes": [
+        "urn:synthetic:condition|SYN-COND-002"
+      ],
+      "family_name": "Synthetic",
+      "given_name": "Drew",
+      "medication_codes": [],
+      "observation_codes": [
+        "urn:synthetic:observation|SYN-OBS-001"
+      ],
+      "phone": "555-0104",
+      "scenario_code": "EMERGENCY_INTERRUPTION",
+      "synthetic_id": "SYN-PAT-D"
+    },
+    {
+      "allergy_codes": [],
+      "birth_date": "1985-09-10",
+      "condition_codes": [],
+      "family_name": "Synthetic",
+      "given_name": "Emery",
+      "medication_codes": [],
+      "observation_codes": [],
+      "phone": "555-0105",
+      "scenario_code": "HUMAN_REVIEW_FALLBACK",
+      "synthetic_id": "SYN-PAT-E"
+    },
+    {
+      "allergy_codes": [],
+      "birth_date": "1995-11-12",
+      "condition_codes": [],
+      "family_name": "Synthetic",
+      "given_name": "Finley",
+      "medication_codes": [],
+      "observation_codes": [],
+      "phone": "555-0106",
+      "scenario_code": "SCHEDULING_FAILURE",
+      "synthetic_id": "SYN-PAT-F"
+    },
+    {
+      "allergy_codes": [],
+      "birth_date": "1981-12-13",
+      "condition_codes": [],
+      "family_name": "Synthetic",
+      "given_name": "Avery",
+      "medication_codes": [],
+      "observation_codes": [],
+      "phone": "555-0107",
+      "scenario_code": "IDENTITY_AMBIGUITY",
+      "synthetic_id": "SYN-PAT-G"
+    }
+  ],
+  "slots": [
+    {
+      "duration_minutes": 20,
+      "kind": "SAME_DAY",
+      "location_id": "LOC-SYN-MAIN",
+      "offset_minutes": 120,
+      "provider_id": "PROV-SYN-1",
+      "slot_id": "SLOT-SYN-SAME-DAY-1"
+    },
+    {
+      "duration_minutes": 20,
+      "kind": "CANCELLATION",
+      "location_id": "LOC-SYN-MAIN",
+      "offset_minutes": 240,
+      "provider_id": "PROV-SYN-1",
+      "slot_id": "SLOT-SYN-CANCEL-1"
+    },
+    {
+      "duration_minutes": 20,
+      "kind": "ALTERNATIVE_PROVIDER",
+      "location_id": "LOC-SYN-EAST",
+      "offset_minutes": 300,
+      "provider_id": "PROV-SYN-2",
+      "slot_id": "SLOT-SYN-ALT-1"
+    },
+    {
+      "duration_minutes": 15,
+      "kind": "TELEHEALTH",
+      "location_id": "LOC-SYN-VIRTUAL",
+      "offset_minutes": 360,
+      "provider_id": "PROV-SYN-2",
+      "slot_id": "SLOT-SYN-TELE-1"
+    },
+    {
+      "duration_minutes": 30,
+      "kind": "OPEN",
+      "location_id": "LOC-SYN-MAIN",
+      "offset_minutes": 1500,
+      "provider_id": "PROV-SYN-1",
+      "slot_id": "SLOT-SYN-OPEN-1"
+    },
+    {
+      "duration_minutes": 30,
+      "kind": "OPEN",
+      "location_id": "LOC-SYN-MAIN",
+      "offset_minutes": 4320,
+      "provider_id": "PROV-SYN-1",
+      "slot_id": "SLOT-SYN-OPEN-2"
+    },
+    {
+      "duration_minutes": 30,
+      "kind": "NEXT_AVAILABLE",
+      "location_id": "LOC-SYN-MAIN",
+      "offset_minutes": 20160,
+      "provider_id": "PROV-SYN-1",
+      "slot_id": "SLOT-SYN-NEXT-1"
+    }
+  ]
+}
