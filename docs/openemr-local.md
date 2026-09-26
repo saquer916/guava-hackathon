@@ -91,20 +91,59 @@ From OpenEMR `rel-840` `Documentation/api/FHIR_API.md` and `AUTHENTICATION.md`:
 
 ## Evidence status
 
-- Offline invariants (loopback binds, digest pins, no credential defaults,
-  password grant off, confirmation-gated reset, probe URL refusal, pinning,
-  capability summarization) are covered by `tests/integration/test_openemr_local.py`.
-- **Not yet observed live.** The machine that produced this task had no
-  Docker runtime, so the stack has not been started, the image healthcheck has
-  not been observed, and no live CapabilityStatement has been captured. The
-  first operator with Docker should run the reset and probe above and attach
-  the probe summary to Issue #3.
+Offline invariants (loopback binds, digest pins, no credential defaults,
+password grant off, confirmation-gated reset, probe URL refusal, pinning,
+capability summarization) are covered by `tests/integration/test_openemr_local.py`.
+
+### Observed live (2026-09-26, Windows 11 + Docker Desktop 29.8.0)
+
+- Both pinned images pulled; Docker verified the pinned content digests
+  (`openemr/openemr@sha256:1ebfa4ab…`, `mariadb@sha256:79d59758…`).
+- `reset.sh` completed with `OPENEMR_HTTPS_PORT=9301` (9300 was already taken on
+  that host). Compose `--wait` reported healthy after about 14 s; OpenEMR's own
+  first-run auto-configuration log reported 41 s.
+- Published binding: `127.0.0.1:9301->443/tcp` only; MariaDB is not published.
+- The certificate fingerprint read from the host matched the in-container
+  `openssl` fingerprint (the image does ship `openssl`). The certificate is
+  self-signed with `CN=localhost` and `CA:TRUE`, so the exported PEM works as the
+  CA bundle `HttpxFhirTransport` requires.
+- `probe.py --base-url https://localhost:9301 probe --pin-sha256 <pin>` returned
+  healthy. Summary of the live CapabilityStatement:
+  - `fhirVersion` 4.0.1, status `active`, software version not reported.
+  - 34 resource types. **No `Slot`, no `Schedule`.**
+  - `Patient`: create, read, search-type, update; search params include `given`,
+    `family`, `birthdate`, `phone`, `identifier`.
+  - `Appointment`: read, search-type only (`_id`, `_lastUpdated`, `date`, `patient`).
+  - `Encounter`, `Observation`: read, search-type. `DocumentReference`: create,
+    read, search-type.
+- The real `OpenEMRFhirAdapter.discover()` ran against it
+  (`tests/e2e/test_openemr_live.py`, opt-in): active; `FIND_PATIENT` and
+  `VERIFY_PATIENT` supported; availability, create, and update appointment
+  unsupported.
+- OAuth2 discovery advertises only `authorization_code` and `refresh_token`
+  grants. Dynamic client registration succeeded; the new client was
+  **disabled by default** (`oauth_clients.is_enabled = 0`) and had to be enabled
+  by an administrator action (performed directly on the synthetic database).
+
+### Not observed live
+
+- **No access token was obtained.** A scripted authorization-code login with
+  the `OE_USER`/`OE_PASS` administrator credential was rejected by the OAuth2
+  login page ("verify the information you have entered is correct"). The
+  cause is unresolved (candidates: OAuth2 login requiring a separately
+  provisioned API user, or the credential not being applied to the OAuth2
+  user store). Therefore no FHIR Patient search, no fixture loading
+  (`load_fixtures.py apply`), and no orchestrated call through live OpenEMR
+  has run.
+- The opt-in test in `tests/integration/test_openemr_local.py` calls the probe
+  without `--base-url`, so it always targets port 9300; on a host where 9300 is
+  another stack it probes the wrong server. Use the probe CLI with
+  `--base-url` instead until the test accepts the port.
 
 ## Known risks
 
 - The self-signed certificate may be regenerated whenever the container is
-  recreated; re-pin after every reset. The in-container `openssl` cross-check
-  above assumes the image ships `openssl`; this has not been observed yet.
+  recreated; re-pin after every reset.
 - `site_addr_oath` assumes the host port in `.env`; changing the port requires
   a reset so OAuth2 audience values match.
 - Image digests are multi-architecture index digests (amd64, arm64).

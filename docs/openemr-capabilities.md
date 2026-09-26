@@ -28,14 +28,14 @@ Otherwise each operation is enabled only if the statement advertises every
 interaction and search parameter it uses. Operations check this before sending
 any request.
 
-| Port operation | Requires | Status against documented OpenEMR |
+| Port operation | Requires | Live OpenEMR 8.4.1 (observed 2026-09-26) |
 | --- | --- | --- |
-| `find_patient` | `Patient` `search-type` + each query factor's search param (`given`, `family`, `birthdate`, `phone`, `identifier`) | Expected available |
-| `get_patient` | `Patient` `read` | Expected available |
-| `verify_patient` | `Patient` `read` | Expected available |
-| `get_appointments` | `Appointment` `search-type` with `patient` | Must be confirmed by live statement |
-| `get_available_appointments` | `Slot` `search-type` with `start`, `status` | **Unavailable**: OpenEMR documents no `Slot`/`Schedule` resource. Even if advertised, stays unsupported (`SLOT_MAPPING_NOT_IMPLEMENTED`). |
-| `get_clinical_context` | `search-type` with `patient` on `Condition`, `MedicationRequest`, `AllergyIntolerance`, `Observation` | Must be confirmed by live statement |
+| `find_patient` | `Patient` `search-type` + each query factor's search param (`given`, `family`, `birthdate`, `phone`, `identifier`) | Supported (advertised) |
+| `get_patient` | `Patient` `read` | Supported (advertised) |
+| `verify_patient` | `Patient` `read` | Supported (advertised) |
+| `get_appointments` | `Appointment` `search-type` with `patient` | Supported (advertised) |
+| `get_available_appointments` | `Slot` `search-type` with `start`, `status` | **Unsupported** (`NOT_ADVERTISED_SLOT_SEARCH_TYPE`): the live statement has no `Slot`/`Schedule`. Even if advertised, stays unsupported (`SLOT_MAPPING_NOT_IMPLEMENTED`). |
+| `get_clinical_context` | `search-type` with `patient` on `Condition`, `MedicationRequest`, `AllergyIntolerance`, `Observation` | Supported (advertised) |
 | `create_appointment`, `update_appointment` | — | **Disabled** (`ADAPTER_READ_ONLY_BOUNDARY`) |
 | `record_call_summary`, `record_triage_result` | — | **Disabled** (`ADAPTER_READ_ONLY_BOUNDARY`) |
 
@@ -77,6 +77,12 @@ any request.
 3. **Token acquisition.** Authorization-code flow requires an interactive
    login; client-credentials requires `system/*` scopes and JWKS, which this
    project does not enable.
-4. **Live confirmation.** No live CapabilityStatement has been captured (the
-   worker host had no Docker). Tests use hand-authored payloads shaped per
-   OpenEMR documentation.
+4. **Live confirmation.** Capability discovery was observed live on
+   2026-09-26 (see `docs/openemr-local.md`): the report above matches the real
+   adapter's `capabilities()` output. OpenEMR's FHIR `Appointment` is read and
+   search only, so booking cannot be done through FHIR at all. Data reads
+   (patient search, verification, context) have **not** run live because no
+   access token was obtained; tests still use hand-authored payloads.
+5. **Chart notes.** The live statement advertises `DocumentReference` create,
+   a possible documented channel for `record_call_summary` if Codex approves a
+   write scope.

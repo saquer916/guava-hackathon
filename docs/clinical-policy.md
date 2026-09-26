@@ -73,8 +73,10 @@ Lower `priority` numbers take precedence. Rules are evaluated in
 | EX-ROUTINE-002 | 30 | ROUTINE | reason = FOLLOW_UP |
 | EX-ADMIN-001 | 40 | ADMINISTRATIVE | reason in {ADMINISTRATIVE, MEDICATION_REFILL} |
 
-All emergency rules use script `EXAMPLE_UNREVIEWED_SCRIPT_EMERGENCY_SERVICES`,
-whose wording has not been written or reviewed.
+All emergency rules use script `EXAMPLE_UNREVIEWED_SCRIPT_EMERGENCY_SERVICES`.
+Illustrative wording for it, and for every other caller-facing string, now
+exists in `Hackathon/src/clinical_triage/orchestration/example.py`; every
+string is prefixed `EXAMPLE_UNREVIEWED` and none has been reviewed.
 
 ## Known consequences of the example design
 
@@ -85,6 +87,30 @@ whose wording has not been written or reviewed.
   caller who cannot supply a Celsius value is routed to human review.
 - Unit conversion is not performed by the engine; the voice layer must supply
   normalized values or the evaluation fails closed.
+
+## Behavior around the policy (verified by tests)
+
+These are orchestration behaviors, covered by `tests/orchestration` and
+`tests/e2e`; they do not change the rules above.
+
+- **Order is policy-driven.** The four red flags are asked first, then reason
+  for call, then severity only for `SYMPTOM`, then temperature only when
+  EX-URGENT-002 could still outrank the matched rule (`MILD`/`MODERATE`).
+  A `FOLLOW_UP` caller is never asked about symptoms.
+- **Each question is asked once.** An unparseable answer to a required
+  question is not re-asked; the call routes to human review.
+- **Data-quality clarification.** A temperature outside 34–43 °C is recorded
+  unconfirmed and the configured clarification question is asked once; the
+  corrected value decides routing, and a second implausible value routes to
+  human review. (Example: a caller reading "103" from a Fahrenheit
+  thermometer.) The range is EXAMPLE_UNREVIEWED.
+- **Emergency terminates scheduling.** An emergency rule firing at any point,
+  including after an appointment was offered, withdraws the offer, prevents
+  booking, stops all further EHR calls (including end-of-call chart writes),
+  and transfers or plays the emergency script.
+- **No booking without a human yes.** Booking needs an explicit caller YES to
+  one offer, asked in its own task, plus an operator setting. HUMAN_REVIEW and
+  EMERGENCY never book. Overbooking is only ever suggested to staff.
 
 ## Clinical review TODOs (blocking any real use)
 
@@ -97,3 +123,19 @@ whose wording has not been written or reviewed.
    red flags, age/pregnancy considerations, and follow-up logic.
 4. Define how caller uncertainty ("I don't know") is represented and routed.
 5. Validate against clinician-authored synthetic cases, including near misses.
+6. Review all example caller-facing wording (consent boundary, emergency
+   script, human-review callback, question phrasing) in
+   `orchestration/example.py`.
+7. Approve or replace the temperature plausibility range (34–43 °C) and decide
+   how Fahrenheit readings should be handled.
+8. Decide whether an EMERGENCY call should produce a chart note (today it
+   deliberately makes no EHR call after escalation; the protected decision
+   record still captures it).
+9. History facts the product brief mentions (onset, location, progression,
+   associated symptoms, existing problem) are **not collected**; the policy
+   uses seven facts only. Decide which belong in routing rules and which in a
+   clinician summary.
+10. Existing-appointment changes (reschedule/cancel) have no call reason,
+    rule, or flow yet.
+11. Scheduling windows per disposition are example values: same-day 0–12 h,
+    soon 0–72 h, routine and administrative 1–21 days.
